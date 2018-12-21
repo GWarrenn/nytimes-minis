@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.4.3/tabletop.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.10/lodash.min.js"></script>
+
+ <style type="text/css">
+
+	th, td {
+	  padding: 8px;
+	  text-align: center;
+	  border-bottom: 1px solid #ddd;
+	}    
+	body{
+	    font-family: Courier;
+	    font-style: normal;
+	    font-size: 20px;
+	    -webkit-font-smoothing: antialiased;
+	    text-rendering: optimizeLegibility;
+	}
+
+	#container {
+	    width:'500px';
+	    border-bottom: 1px solid #333;
+	    border-top: 1px solid #333;
+	    margin: auto;
+	    text-align:center;
+	}
+
+	p {
+		font-size: 16px;
+	}
+</style>
+
+</head>
+<body>
+	<h1 align="center" style="font-family:cheltenham;">New York Times Mini Crossword Leaderboard</h1>
+   	<div id='container'>
+    	<p> Select Date Range: <select align="center" id='dateDropdown'></select></p>
+	</div>
+	<div id="leaderboard-table"></div>
+	
+	<p style="font-size:12px">Last updated: <span id="datetime"></span></p>
+
+	<script>
+
+	var dt = new Date();
+	document.getElementById("datetime").innerHTML = dt.toLocaleString();
+	
+	function drawChart(data) {
+
+		//var dateOffset = (24*60*60*1000) * 7;
+		//var today = new Date();
+		//var filter = today - dateOffset
+
+	    ranges = ['Last 7 days','Last 30 days','All time']
+		
+		var dropDown = d3.select('#dateDropdown')
+		  
+		dropDown
+		  .selectAll("option")
+          .data(ranges)
+          .enter()
+          .append("option")
+            .attr("value", function (d) { return d; })
+            .text(function (d) {
+                return d[0].toUpperCase() + d.slice(1,d.length);
+            })
+          .on("change", onchange)
+
+        dropDown.on('change',function() {
+        
+        	var selectValue = d3.select(this)
+				.property('value');
+
+			updateTable(data,selectValue);	
+
+        })  
+
+		var updateTable = function(data,filter_param) {
+
+			d3.select("#leaderboard-table tbody").remove();
+			d3.select("#leaderboard-table thead").remove();
+
+			if(filter_param === "Last 7 days"){
+				var dateOffset = (24*60*60*1000) * 7;
+				var today = new Date();
+				var filter = today - dateOffset
+        	}
+
+        	if(filter_param === "Last 30 days"){
+				var dateOffset = (24*60*60*1000) * 30;
+				var today = new Date();
+				var filter = today - dateOffset
+        	}
+
+        	if(filter_param === "All time"){
+				var dateOffset = (24*60*60*1000) * 36;
+				var today = new Date();
+				var filter = today - dateOffset
+        	}
+
+			newArr = _.map(data, item => {
+				let newItem = _.clone(item);
+				newItem.complete_time_secs = parseInt(newItem.complete_time_secs, 10);
+
+				newItem.fmt_date = new Date(newItem.date)
+				newItem.day_of_week = newItem.fmt_date.getDay()
+				newItem.saturday = newItem.day_of_week == "6"
+
+				return newItem;
+			});
+
+			newArr_case = newArr.map(function(a) { 
+			    a.lower_case = a.name.toLowerCase().trim();
+			    return a;
+			});
+
+	        //filter data to default value -- Past N days
+
+	        newArr_case = newArr_case.filter(function (a) { return a.fmt_date >= filter ; });
+
+			// calculate average times by name
+
+			avg_times = _(newArr_case)
+			  .groupBy('lower_case')
+			  .map((lower_case, id) => ({
+			    lower_case: id,
+			    avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+			    count : _.countBy(lower_case)
+
+			  }))
+			  .value()
+
+			// now run average times without saturdays
+
+			function removeDayofWeek(num, obj) {
+				for (var key in obj) {
+					if (obj[key].day_of_week == "6") {
+					  delete obj[key];
+					}
+				}
+				return obj;
+			}
+
+			newArr_case_no_sat = removeDayofWeek("6",newArr_case)
+
+			avg_times_no_sat = _(newArr_case_no_sat)
+			  .groupBy('lower_case')
+			  .map((lower_case, id) => ({
+			    lower_case: id,
+			    avg_complete_time_no_sat: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+			    count_no_sat : _.countBy(lower_case)
+			  }))
+			  .value()
+
+			// now merge two avg times together (lodash is great!)  
+
+			comb_avg_times = _.map(avg_times, function(obj) {
+				return _.assign(obj, _.find(avg_times_no_sat, {
+				    lower_case: obj.lower_case
+				}));
+			});
+
+			function fix_counts(obj) {
+			    for (var key in obj) {
+			          obj[key].count = obj[key].count["[object Object]"];
+			          obj[key].count_no_sat = obj[key].count_no_sat["[object Object]"];
+
+			    }
+			    return obj;
+			}
+
+			comb_avg_times = fix_counts(comb_avg_times)
+			comb_avg_times = _.orderBy(comb_avg_times, ['avg_complete_time'], ['asc']);
+
+			columns = ['lower_case','avg_complete_time','avg_complete_time_no_sat','count','count_no_sat']   
+
+			display_cols = ['Name','Average Time','Average Time\n(Excluding Saturday)','Puzzles Completed','Puzzles Completed\n(Excluding Saturday)']
+
+			var min = _.minBy(comb_avg_times, function(o) {
+  				return o.avg_complete_time;
+			})
+			var min_val = parseInt(min.avg_complete_time)
+			
+			var max = _.maxBy(comb_avg_times, function(o) {
+  				return o.avg_complete_time;
+			})
+			var max_val = parseInt(max.avg_complete_time)
+			
+			var color = d3.scaleLinear()
+  				.domain([min_val, max_val])
+  				.range(["#B5D3E7","#003366"]);
+
+			var table = d3.select('#leaderboard-table')
+	        	.append('table')
+	        	//.attr("class", "table table-condensed table-striped");
+
+	        var thead = table.append('thead')
+			var	tbody = table.append('tbody');	
+
+			//// append the header row
+			thead.append('tr')
+			  .selectAll('th')
+			  .data(display_cols).enter()
+			  .append('th')
+			    .text(function (column) { return column; });
+
+			// create a row for each object in the data
+			var rows = tbody.selectAll('tr')
+			  .data(comb_avg_times)
+			  .enter()
+			  .append('tr');
+
+			rows.exit().remove();  
+
+			// create a cell in each row for each column
+			var cells = rows.selectAll('td')
+			  .data(function (row) {
+			    return columns.map(function (column) {
+			      return {column: column, value: row[column]};
+			    });
+			  })
+			  .enter()
+			  .append('td')
+			  .style("background-color", function(d){ if(d.value > 25) return color(d.value); return d.value; })
+			  .text(function (d) { return d.value; });    
+
+			cells.exit().remove();  
+
+			//return table;
+   		}
+
+   		updateTable(data,ranges[0]);
+
+	}
+	
+	//load data from google sheet doc
+
+	var publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1W9jTFsCLpBuAUa3AhvwHM92bWwqpsoWXzJ9k9_UuvjQ/pubhtml';
+
+	function renderSpreadsheetData() {
+		Tabletop.init( { key: publicSpreadsheetUrl,
+		             callback: draw,
+		             simpleSheet: true } )
+	}
+
+	function draw(data, tabletop) {
+
+		results = tabletop.sheets("mini times")
+		main_data = results.elements
+
+		drawChart(main_data);
+	}
+
+	renderSpreadsheetData();
+
+	</script>
+
+</body>
+</html>
