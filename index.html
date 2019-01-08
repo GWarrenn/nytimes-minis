@@ -103,6 +103,7 @@
 </head>
 	<body>
 		<h1 align="center" style="font-family:cheltenham;">New York Times Mini Crossword Leaderboard</h1>
+		<div id='crossword_queen' align="center"></div>
 	   	<div id='container'>
 			<p> Select Date Range: <select align="center" id='dateDropdown'></select></p>
 		</div>
@@ -306,10 +307,14 @@
 					cells.exit().remove();  
 
 					//return table;
+					fastest_time = _.minBy(_.keys(avg_times), function (o) { return avg_times[o].avg_complete_time; });
+
+		   		crossword_queen = avg_times[fastest_time].lower_case
+		   		document.getElementById("crossword_queen").innerHTML = "👑 All hail the Crossword Queen (for " + filter_param + "): <b>" + crossword_queen + " </b> 👑"
+
 		   		}
 
 		   		updateTable(data,ranges[0]);
-
 			}
 
 
