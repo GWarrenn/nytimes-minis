@@ -12,7 +12,7 @@
 	  padding: 8px;
 	  text-align: center;
 	  border-bottom: 1px solid #ddd;
-	}	
+	}
 	body{
 		font-family: Courier;
 		font-style: normal;
@@ -36,27 +36,27 @@
 
 	.dot {
 	  stroke: #000;
-	}	
+	}
 
 	.legend {
-		font-family: Helvetica;	 
-		font:10px;		 
+		font-family: Helvetica;
+		font:10px;
 	}
 
-	div.tooltip {	
-		position: absolute;			
-		text-align: left;			
-		width: auto;					
-		height: auto;					
-		padding: 2px;				
-		font: 12px sans-serif;		
-		background: white;	
-		border: 1px;		
-		border-radius: 8px;			
-		pointer-events: none;			
+	div.tooltip {
+		position: absolute;
+		text-align: left;
+		width: auto;
+		height: auto;
+		padding: 2px;
+		font: 12px sans-serif;
+		background: white;
+		border: 1px;
+		border-radius: 8px;
+		pointer-events: none;
 	}
 
-	path { 
+	path {
 		stroke: steelblue;
 		stroke-width: 2;
 		fill: none;
@@ -78,22 +78,22 @@
 		text-rendering: optimizeLegibility;
 	}
 	#selector {
-		font-family: Helvetica;	 
-		font:24px;	
+		font-family: Helvetica;
+		font:24px;
 		font-style:bold;
 	}
 
 	#chart-header {
-		font-family: Helvetica;	 
-		font:24px;	
-		font-style:bold;	 
+		font-family: Helvetica;
+		font:24px;
+		font-style:bold;
 	}
 
 	.grid .tick {
 		stroke: lightgrey;
 		opacity: 0.2;
 	}
-	
+
 	.grid path {
 	  stroke-width: 0;
 	}
@@ -102,7 +102,6 @@
 
 </head>
 	<body>
-		<img src="https://raw.githubusercontent.com/GWarrenn/gwarrenn.github.io/drafts/images/minis/mini_header.png" alt="header" class="center" >
 		<h1 align="center" style="font-family:cheltenham;">New York Times Mini Crossword Leaderboard</h1>
 		<div id='crossword_queen' align="center"></div>
 	   	<div id='container'>
@@ -122,7 +121,7 @@
 
 			var dt = new Date();
 			document.getElementById("datetime").innerHTML = dt.toLocaleString();
-			
+
 			function drawChart(data) {
 
 				//var dateOffset = (24*60*60*1000) * 7;
@@ -130,9 +129,9 @@
 				//var filter = today - dateOffset
 
 				ranges = ['Last 7 days','Last 30 days','All time']
-				
+
 				var dropDown = d3.select('#dateDropdown')
-				  
+
 				dropDown
 				  .selectAll("option")
 				  .data(ranges)
@@ -145,13 +144,13 @@
 				  .on("change", onchange)
 
 				dropDown.on('change',function() {
-				
+
 					var selectValue = d3.select(this)
 						.property('value');
 
-					updateTable(data,selectValue);	
+					updateTable(data,selectValue);
 
-				})  
+				})
 
 				var updateTable = function(data,filter_param) {
 
@@ -187,7 +186,7 @@
 						return newItem;
 					});
 
-					newArr_case = newArr.map(function(a) { 
+					newArr_case = newArr.map(function(a) {
 						a.lower_case = a.name.toLowerCase().trim();
 						return a;
 					});
@@ -230,7 +229,7 @@
 						}))
 						.value()
 
-					// now merge two avg times together (lodash is great!)  
+					// now merge two avg times together (lodash is great!)
 
 					comb_avg_times = _.map(avg_times, function(obj) {
 						return _.assign(obj, _.find(avg_times_no_sat, {
@@ -253,7 +252,7 @@
 					comb_avg_times = fix_counts(comb_avg_times)
 					comb_avg_times = _.orderBy(comb_avg_times, ['avg_complete_time'], ['asc']);
 
-					columns = ['lower_case','avg_complete_time','avg_complete_time_no_sat','count','count_no_sat']   
+					columns = ['lower_case','avg_complete_time','avg_complete_time_no_sat','count','count_no_sat']
 
 					display_cols = ['Name','Average Time','Average Time\n(Excluding Saturday)','Puzzles Completed','Puzzles Completed\n(Excluding Saturday)']
 
@@ -261,12 +260,12 @@
 		  				return o.avg_complete_time;
 					})
 					var min_val = parseInt(min.avg_complete_time)
-					
+
 					var max = _.maxBy(comb_avg_times, function(o) {
 		  				return o.avg_complete_time;
 					})
 					var max_val = parseInt(max.avg_complete_time)
-					
+
 					var color = d3.scaleLinear()
 		  				.domain([min_val, max_val])
 		  				.range(["#B5D3E7","#003366"]);
@@ -276,7 +275,7 @@
 						//.attr("class", "table table-condensed table-striped");
 
 					var thead = table.append('thead')
-					var	tbody = table.append('tbody');	
+					var	tbody = table.append('tbody');
 
 					//// append the header row
 					thead.append('tr')
@@ -291,7 +290,7 @@
 					  .enter()
 					  .append('tr');
 
-					rows.exit().remove();  
+					rows.exit().remove();
 
 					// create a cell in each row for each column
 					cells = rows.selectAll('td')
@@ -303,9 +302,9 @@
 						.enter()
 						.append('td')
 						.style("background-color", function(d){ if(d.column == "avg_complete_time" | d.column == "avg_complete_time_no_sat" ) return color(d.value); return d.value; })
-						.text(function (d) { return d.value; });	
+						.text(function (d) { return d.value; });
 
-					cells.exit().remove();  
+					cells.exit().remove();
 
 					//return table;
 					fastest_time = _.minBy(_.keys(avg_times), function (o) { return avg_times[o].avg_complete_time; });
@@ -321,7 +320,7 @@
 
 			function matchUp(data) {
 
-				data = data.map(function(a) { 
+				data = data.map(function(a) {
 					a.lower_case = a.name.toLowerCase().trim();
 					return a;
 				});
@@ -335,7 +334,7 @@
 				var sel1 = names[Math.floor(Math.random()*names.length)];
 
 				names = names.sort(function(x,y){ return x == sel1 ? -1 : y == sel1 ? 1 : 0; });
-				
+
 				var first_contender = d3.select('#first_contender')
 
 				first_contender
@@ -352,9 +351,9 @@
 					sel1 = d3.select(this)
 						.property('value');
 
-					calculateWinners(data,sel1,sel2)	
-			
-				})  
+					calculateWinners(data,sel1,sel2)
+
+				})
 
 				Array.prototype.remove = function() {
 					var what, a = arguments, L = a.length, ax;
@@ -389,17 +388,17 @@
 					sel2 = d3.select(this)
 						.property('value');
 
-					calculateWinners(data,sel1,sel2)	
-				})  
+					calculateWinners(data,sel1,sel2)
+				})
 
 				calculateWinners(data,sel1,sel2)
-			
+
 			}
 
 			function calculateWinners(data,cand1,cand2) {
 
-				cand1_data = data.filter(function (a) { 
-					return a.lower_case == cand1 ; 
+				cand1_data = data.filter(function (a) {
+					return a.lower_case == cand1 ;
 				});
 
 				cand1_data = _.map(cand1_data, item => {
@@ -413,8 +412,8 @@
 
 				cand1 = cand1[0].toUpperCase() + cand1.slice(1,cand1.length);
 
-				cand2_data = data.filter(function (a) { 
-					return a.lower_case == cand2 ; 
+				cand2_data = data.filter(function (a) {
+					return a.lower_case == cand2 ;
 				});
 
 				cand2_data = _.map(cand2_data, item => {
@@ -454,7 +453,7 @@
 									count : _.countBy(lower_case)
 								}))
 								.value()
-					
+
 					function fix_counts_flat(obj) {
 						obj[0].count = obj[0].count["[object Object]"];
 						return obj;
@@ -485,12 +484,12 @@
 		  		//document.body.replaceChild(p);
 			}
 
-			function drawTrendChart(data) {	
+			function drawTrendChart(data) {
 
 				var margin = {top: 30, right: 20, bottom: 30, left: 50},
 					width = 700 - margin.left - margin.right,
 					height = 500 - margin.top - margin.bottom;
-				
+
 				// parse the date / time
 				var parseTime = d3.timeParse("%m/%d/%Y");
 				var formatTime = d3.timeFormat("%b %e");
@@ -500,7 +499,7 @@
 					d.date = parseTime(d.date);
 					d.complete_time_secs = +d.complete_time_secs;
 					new_max = new Date(Math.max(d.date))
-				});		
+				});
 
 				// set the ranges
 				var x = d3.scaleTime()
@@ -508,7 +507,7 @@
 						.range([0, width - 75]);
 				var y = d3.scaleLinear()
 						.range([height, 0]);
-				
+
 				var trend_line = d3.line()
 					.x(function(d) { return x(d.date); })
 					.y(function(d) { return y(d.complete_time_secs); })
@@ -537,12 +536,12 @@
 		//					.attr("class", "line")
 		//					.style("stroke", function() { // Add dynamically
 		//						return d.color = colorScale(d.key); })
-		//					.attr("d", trend_line(d.values)); 
+		//					.attr("d", trend_line(d.values));
 		//
-		//			});  
+		//			});
 
-				var div = d3.select("#chart").append("div")	
-					.attr("class", "tooltip")				
+				var div = d3.select("#chart").append("div")
+					.attr("class", "tooltip")
 					.style("opacity", 0);
 
 				svg.selectAll(".dot")
@@ -555,23 +554,23 @@
 					.attr("cx", function(d) { return x(d.date); })
 					.attr("cy", function(d) { return y(d.complete_time_secs); })
 					//apply tooltip
-					.on("mouseover", function(d) {		
-								div.transition()		
-									.duration(200)		
-									.style("opacity", .9);		
+					.on("mouseover", function(d) {
+								div.transition()
+									.duration(200)
+									.style("opacity", .9);
 								div .html("Date: " + formatTime(d.date) + "<br/>Name: "  + d.name[0].toUpperCase() + d.name.slice(1,d.name.length) + "<br/>Time: " + d.complete_time_secs)
-									.style("left", (d3.event.pageX) + "px")		
-									.style("top", (d3.event.pageY - 28) + "px");	
-					})					
-					.on("mouseout", function(d) {		
-						div.transition()		
-							.duration(500)		
-							.style("opacity", 0);	
+									.style("left", (d3.event.pageX) + "px")
+									.style("top", (d3.event.pageY - 28) + "px");
+					})
+					.on("mouseout", function(d) {
+						div.transition()
+							.duration(500)
+							.style("opacity", 0);
 					});
 
 				document.getElementById("chart-header").innerHTML = "Mini Crossword Times"
 
-				//create legend	
+				//create legend
 				var legend = svg.selectAll(".legend")
 					.data(colorScale.domain())
 					.enter().append("g")
@@ -599,17 +598,17 @@
 						.style("opacity", 1);
 					d3.selectAll("circle")
 						.style("opacity", 0.1)
-						.filter(function(d) { 
+						.filter(function(d) {
 							return d.name.toLowerCase().trim() == type; })
 						.style("opacity", 1);
 
 					document.getElementById("chart-header").innerHTML = "Mini Crossword Times  for " + type[0].toUpperCase() + type.slice(1,type.length);
-			
+
 					//d3.selectAll("path")
 					//	.style("opacity", 0.1)
-					//	.filter(function(d) { 
+					//	.filter(function(d) {
 					//		return d.name.toLowerCase().trim() == type; })
-					//	.style("opacity", 1);	
+					//	.style("opacity", 1);
 				})
 				.on("mouseout", function(type) {
 					d3.selectAll(".legend")
@@ -617,17 +616,17 @@
 					d3.selectAll("circle")
 						.style("opacity", .5);
 					document.getElementById("chart-header").innerHTML = "Mini Crossword Times"
-			
+
 				});
 
 				// gridlines in y axis function
-				function make_y_gridlines() {		
+				function make_y_gridlines() {
 					return d3.axisLeft(y)
 						.ticks(5)
 				}
 
 				// add the Y gridlines
-				svg.append("g")			
+				svg.append("g")
 					.attr("class", "grid")
 					.call(make_y_gridlines()
 					.tickSize(-width+50)
@@ -654,7 +653,7 @@
 					.style("text-anchor", "middle")
 					.style("font-size","12px")
 					.style("font-family","Helvetica")
-					.text("Complete time in seconds"); 		
+					.text("Complete time in seconds");
 
 			}
 
