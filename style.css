@@ -4,6 +4,9 @@
 	  text-align: center;
 	  border-bottom: 1px solid #ddd;
 	}
+	th {
+		font-weight: bold;
+	}
 	body{
 		font-family: Courier;
 		font-style: normal;
@@ -23,7 +26,6 @@
 	p {
 		font-size: 16px;
 	}
-
 
 	.dot {
 	  stroke: #000;
