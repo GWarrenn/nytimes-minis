@@ -1,0 +1,96 @@
+
+	th, td {
+	  padding: 8px;
+	  text-align: center;
+	  border-bottom: 1px solid #ddd;
+	}
+	body{
+		font-family: Courier;
+		font-style: normal;
+		font-size: 20px;
+		-webkit-font-smoothing: antialiased;
+		text-rendering: optimizeLegibility;
+	}
+
+	#container {
+		width:'500px';
+		border-bottom: 1px solid #333;
+		border-top: 1px solid #333;
+		margin: auto;
+		text-align:center;
+	}
+
+	p {
+		font-size: 16px;
+	}
+
+
+	.dot {
+	  stroke: #000;
+	}
+
+	.legend {
+		font-family: Helvetica;
+		font:10px;
+	}
+
+	div.tooltip {
+		position: absolute;
+		text-align: left;
+		width: auto;
+		height: auto;
+		padding: 2px;
+		font: 12px sans-serif;
+		background: white;
+		border: 1px;
+		border-radius: 8px;
+		pointer-events: none;
+	}
+
+	path {
+		stroke: steelblue;
+		stroke-width: 2;
+		fill: none;
+	}
+
+	.axis path,
+	.axis line {
+		fill: none;
+		stroke: grey;
+		stroke-width: 1;
+		shape-rendering: crispEdges;
+	}
+
+	#result_text{
+		font-family: Helvetica;
+		font-style: normal;
+		font-size: 18px;
+		-webkit-font-smoothing: antialiased;
+		text-rendering: optimizeLegibility;
+	}
+	#selector {
+		font-family: Helvetica;
+		font:24px;
+		font-style:bold;
+	}
+
+	#chart-header {
+		font-family: Helvetica;
+		font:24px;
+		font-style:bold;
+	}
+
+	#percent_faster {
+		font-family: Helvetica;
+		font:10px;
+		font-style:bold;
+	}
+
+	.grid .tick {
+		stroke: lightgrey;
+		opacity: 0.2;
+	}
+
+	.grid path {
+	  stroke-width: 0;
+	}
