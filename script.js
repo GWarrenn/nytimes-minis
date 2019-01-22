@@ -46,7 +46,7 @@ function drawChart(data) {
 		}
 
 		if(filter_param === "All time"){
-			var dateOffset = (24*60*60*1000) * 36;
+			var dateOffset = (24*60*60*1000) * 365;
 			var today = new Date();
 			var filter = today - dateOffset
 		}
