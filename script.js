@@ -71,6 +71,29 @@ function drawChart(data) {
 
 		newArr_case = newArr_case.filter(function (a) { return a.fmt_date >= filter ; });
 
+		avg_daily_time = _(newArr_case)
+				.groupBy('date')
+				.map((date, id) => ({
+					date: id,
+					avg_time : Math.round(_.meanBy(date, 'complete_time_secs')),
+				}))
+				.value()
+
+		//now merge in average daily times	
+
+		temp_data = newArr_case	
+
+		temp_data = _.map(temp_data, function(obj) {
+			return _.assign(obj, _.find(avg_daily_time, {
+				date : obj.date
+			}));
+		});
+
+		temp_data = temp_data.map(function(a) {
+			a.diff = a.complete_time_secs - a.avg_time ;
+			return a;
+		});
+
 		// calculate average times by name
 
 		avg_times = _(newArr_case)
@@ -78,6 +101,7 @@ function drawChart(data) {
 		  .map((lower_case, id) => ({
 			lower_case: id,
 			avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+			avg_adj_time : Math.round(_.meanBy(lower_case, 'diff')),
 			count : _.countBy(lower_case)
 
 		  }))
@@ -128,9 +152,11 @@ function drawChart(data) {
 		comb_avg_times = fix_counts(comb_avg_times)
 		comb_avg_times = _.orderBy(comb_avg_times, ['avg_complete_time'], ['asc']);
 
-		columns = ['lower_case','avg_complete_time','avg_complete_time_no_sat','count','count_no_sat']
+		columns = ['lower_case','avg_complete_time','avg_complete_time_no_sat','avg_adj_time','count','count_no_sat']
 
-		display_cols = ['Name','Average Time','Average Time\n(Excluding Saturday)','Puzzles Completed','Puzzles Completed\n(Excluding Saturday)']
+		display_cols = ['Name','Average Time','Average Time\n(Excluding Saturday)','Time Adjusted to Daily Average','Puzzles Completed','Puzzles Completed\n(Excluding Saturday)']
+
+		// average time scale (no adjustment for average)
 
 		var min = _.minBy(comb_avg_times, function(o) {
 				return o.avg_complete_time;
@@ -145,6 +171,22 @@ function drawChart(data) {
 		var color = d3.scaleLinear()
 				.domain([min_val, max_val])
 				.range(["#B5D3E7","#003366"]);
+
+		// average time scale (adjusted for average)		
+
+		var min_avg = _.minBy(comb_avg_times, function(o) {
+				return o.avg_adj_time;
+		})
+		var min_avg_val = parseInt(min_avg.avg_adj_time)
+
+		var max_avg = _.maxBy(comb_avg_times, function(o) {
+				return o.avg_adj_time;
+		})
+		var max_avg_val = parseInt(max_avg.avg_adj_time)
+
+		var adj_color = d3.scaleLinear()
+				.domain([min_avg_val,0, max_avg_val])
+				.range(["#71e554","#ffffff","#e5ab54"]);				
 
 		var table = d3.select('#leaderboard-table')
 			.append('table')
@@ -178,6 +220,7 @@ function drawChart(data) {
 			.enter()
 			.append('td')
 			.style("background-color", function(d){ if(d.column == "avg_complete_time" | d.column == "avg_complete_time_no_sat" ) return color(d.value); return d.value; })
+			.style("background-color", function(d){ if(d.column == "avg_adj_time" )  return adj_color(d.value); return d.value; })
 			.text(function (d) { return d.value; });
 
 		cells.exit().remove();
