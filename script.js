@@ -154,7 +154,7 @@ function drawChart(data) {
 
 		columns = ['lower_case','avg_complete_time','avg_complete_time_no_sat','avg_adj_time','count','count_no_sat']
 
-		display_cols = ['Name','Average Time','Average Time\n(Excluding Saturday)','Time Adjusted to Daily Average','Puzzles Completed','Puzzles Completed\n(Excluding Saturday)']
+		display_cols = ['Name','Average Time','Average Time\n(Excluding Saturday)','Time Adjusted to Daily Average¹','Puzzles Completed','Puzzles Completed\n(Excluding Saturday)']
 
 		// average time scale (no adjustment for average)
 
