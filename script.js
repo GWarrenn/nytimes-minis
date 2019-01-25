@@ -192,7 +192,7 @@ function drawChart(data) {
 
 		var adj_color = d3.scaleLinear()
 				.domain([min_avg_val,0, max_avg_val])
-				.range(["#3d9332","#ffffff","#ffa500"]);				
+				.range(["#71e554","#ffffff","#ffa500"]);				
 
 		var table = d3.select('#leaderboard-table')
 			.append('table')
