@@ -11,6 +11,17 @@
 
 </head>
 	<body>
+		<ul id="navbar">
+			<li><a class="active" href="#home">Home</a></li>
+			<li><a href="#leagues">Leagues</a></li>
+			<li><a href="#leaderboard">All-Time Leaderboard</a></li>
+			<li><a href="#h2h">Head-to-Head</a></li>
+			<li><a href="#trend">Trend Chart</a></li>
+			<li><a href="#about">About</a></li>
+		</ul>
+
+		<a name="leaderboard"></a>
+
 		<h1 align="center" style="font-family:cheltenham;">New York Times Mini Crossword Leaderboard</h1>
 		<div id='crossword_queen' align="center"></div>
 	   	<div id='container'>
@@ -22,6 +33,7 @@
 
 		However, in this scenario, the first player would receive a <b>TA-DA</b> score of -30, while the second player would receive a <b>TA-DA</b> score of +15. These numbers are then averaged across the week/month/all time.</p>
 
+		<a name="h2h"></a>
 		<div id='container' align="center">
 			<p id='selector'> Compare <select align="center" id='first_contender'></select> and <select align="center" id='second_contender'></select></p>
 			<p id="matchups"> <div id=result_text></div> </p>
@@ -29,7 +41,61 @@
 		<div id='chart-header' align="center"></div>
 		<div style="font-size:12px" id='percent_faster' align="center"></div>
 
+		<a name="trend"></a>
 		<div id='chart' align="center"></div>
+
+		<a name="leagues"></a>
+		<h1 align="center" style="font-family:cheltenham;">New York Times Mini Crossword Leagues</h1>
+		<p style="font-size:12px" style="font-family:Arial;" >Welcome to the inaugural season of the New York Times Mini Crossword Puzzle! Seasons will start and end every month. Inspired/stolen from the Italian professional soccer league, players are broken out into three leagues: Serie A, B, and C. For the first month, all players who completed a puzzle in the preceeding month are entered into a league based on their overall, all-time TADA score. At the end of the month, the two top players in the B and C leaues will be promoted, while the bottom players in A and B leagues will be relegated. Unlike the main leaderboard, where the TADA score is calculated from the entire field, a player's TADA score will only be calculated against other players in your league.</p>
+
+		<div class="image_container">
+			<div class="image">
+				<a href="#a_league"> <img src="images\serie_a.PNG" alt="A"> </a>
+			</div>
+			<div class="image">
+				<a href="#b_league"> <img src="images\serie_b.PNG" alt="B"> </a>
+			</div>
+			<div class="image">
+				<a href="#c_league"> <img src="images\serie_c.PNG" alt="C"> </a>
+			</div>
+		</div>
+
+		<a name="a_league"></a>
+		<h1 id='a-header' align="center" style="font-family:cheltenham;">Serie A Leaderboard</h1>
+		<div id="serie-a-table"></div>
+
+		<a name="b_league"></a>
+		<h1 id='b-header' align="center" style="font-family:cheltenham;">Serie B Leaderboard</h1>
+		<div id="serie-b-table"></div>
+
+		<a name="c_league"></a>
+		<h1 id='c-header' align="center" style="font-family:cheltenham;">Serie C Leaderboard</h1>
+		<div id="serie-c-table"></div>
+
+		<a name="about"></a>
+		<h1 id='about' align="center" style="font-family:cheltenham;">About</h1>
+
+		<p style="font-family:Arial;font-size:14px">
+			In late 2018, my roommate, Mika, proudly announced that she had completed a New York Times Mini crossword in under twenty seconds. I had heard of the mini crossword, but I generally prefered the full puzzle. However, the idea of a rapid fire competition piqued my interest. Over the next few days the three of us sent eachother our Mini times, trying to best eachother. Then, I created a Google sheet to track our times and slowly invited more and more people, which led to all of this.   
+		</p>	
+		<h3 align="left" style="font-family:cheltenham;">A Queen is Crowned</h1>
+		
+		<p style="font-family:Arial;font-size:14px">
+			On February 3rd, 2019, the first Mini Crossword Coronation was held to usher in a new crossword Queen, Caroline Chen. As of writing this remains, the unchallenged All-Time Crossword Queen for nearly two months straight. 
+		</p>
+
+		<div class="image_container">
+			<div class="image">
+				<img src="C:\Users\augus\OneDrive\Documents\GitHub\nytimes-minis\images\queen_1.png" alt="queen_1">
+			</div>
+			<div class="image">
+				<img src="C:\Users\augus\OneDrive\Documents\GitHub\nytimes-minis\images\queen_2.png" alt="queen_2">
+			</div>
+		</div>
+
+		<p style="font-family:Arial;;font-size:14px" >
+			If you would like to join in on the fun, please contact August Warren at augustjwarren@gmail.com
+		</p>
 
 		<script type="text/javascript" src="script.js"></script>
 

@@ -1,4 +1,17 @@
 
+window.onscroll = function() {myFunction()};
+
+var navbar = document.getElementById("navbar");
+var sticky = navbar.offsetTop;
+
+function myFunction() {
+  if (window.pageYOffset >= sticky) {
+    navbar.classList.add("sticky")
+  } else {
+    navbar.classList.remove("sticky");
+  }
+}
+
 var dt = new Date();
 document.getElementById("datetime").innerHTML = dt.toLocaleString();
 
@@ -708,6 +721,603 @@ function drawTrendChart(data) {
 
 }
 
+function serie_a(data,players){
+
+		//filter data to serie_a players
+
+		let player_filter = players.map(itemY => { return itemY.lower_case; });
+		serie_a_times = data.filter(itemX => player_filter.includes(itemX.lower_case));
+
+		serie_a_times = _.map(serie_a_times, item => {
+			let newItem = _.clone(item);
+			newItem.complete_time_secs = parseInt(newItem.complete_time_secs, 10);
+
+			newItem.fmt_date = new Date(newItem.date)
+			newItem.day_of_week = newItem.fmt_date.getDay()
+			newItem.saturday = newItem.day_of_week == "6"
+
+			return newItem;
+		});
+
+		serie_a_times = serie_a_times.map(function(a) {
+			a.lower_case = a.name.toLowerCase().trim();
+			return a;
+		});
+
+		avg_daily_time = _(serie_a_times)
+				.groupBy('date')
+				.map((date, id) => ({
+					date: id,
+					avg_time : Math.round(_.meanBy(date, 'complete_time_secs')),
+				}))
+				.value()
+
+		//now merge in average daily times	
+
+		temp_data = serie_a_times	
+
+		temp_data = _.map(temp_data, function(obj) {
+			return _.assign(obj, _.find(avg_daily_time, {
+				date : obj.date
+			}));
+		});
+
+		temp_data = temp_data.map(function(a) {
+			a.diff = a.complete_time_secs - a.avg_time ;
+			return a;
+		});
+
+		// calculate average times by name
+
+		avg_times_a_times = _(serie_a_times)
+		  .groupBy('lower_case')
+		  .map((lower_case, id) => ({
+			lower_case: id,
+			avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+			avg_adj_time : Math.round(_.meanBy(lower_case, 'diff')),
+			count : _.countBy(lower_case)
+
+		  }))
+		  .value()
+
+		// now run average times without saturdays
+
+		function removeDayofWeek(num, obj) {
+			for (var key in obj) {
+				if (obj[key].day_of_week == "6") {
+				  delete obj[key];
+				}
+			}
+			return obj;
+		}
+
+		newArr_case_no_sat = removeDayofWeek("6",serie_a_times)
+
+		avg_times_no_sat = _(newArr_case_no_sat)
+			.groupBy('lower_case')
+			.map((lower_case, id) => ({
+				lower_case: id,
+				avg_complete_time_no_sat: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+				count_no_sat : _.countBy(lower_case)
+			}))
+			.value()
+
+		// now merge two avg times together (lodash is great!)
+
+		comb_avg_times = _.map(avg_times_a_times, function(obj) {
+			return _.assign(obj, _.find(avg_times_no_sat, {
+				lower_case: obj.lower_case
+			}));
+		});
+
+		function fix_counts(obj) {
+			for (var key in obj) {
+				if (obj[key].count  == undefined) {
+					obj[key].count = 0
+				}
+				else {
+					obj[key].count = obj[key].count["[object Object]"];
+				}
+				if (obj[key].count_no_sat  == undefined) {
+					obj[key].count_no_sat = 0
+				}
+				else{
+					obj[key].count_no_sat = obj[key].count_no_sat["[object Object]"];
+				}
+			}
+			return obj;
+		}
+
+		comb_avg_times = fix_counts(comb_avg_times)
+		comb_avg_times = _.orderBy(comb_avg_times, ['avg_complete_time'], ['asc']);
+
+		columns = ['lower_case','avg_complete_time','avg_complete_time_no_sat','avg_adj_time','count','count_no_sat']
+
+		display_cols = ['Name','Average Time','Average Time\n(Excluding Saturday)','Time Adjusted to Daily Average¹','Puzzles Completed','Puzzles Completed\n(Excluding Saturday)']
+
+		// average time scale (no adjustment for average)
+
+		var min = _.minBy(comb_avg_times, function(o) {
+				return o.avg_complete_time;
+		})
+		var min_val = parseInt(min.avg_complete_time)
+
+		var max = _.maxBy(comb_avg_times, function(o) {
+				return o.avg_complete_time;
+		})
+		var max_val = parseInt(max.avg_complete_time)
+
+		var color = d3.scaleLinear()
+				.domain([min_val, max_val])
+				.range(["#B5D3E7","#003366"]);
+
+		// average time scale (adjusted for average)		
+
+		var min_avg = _.minBy(comb_avg_times, function(o) {
+				return o.avg_adj_time;
+		})
+		var min_avg_val = parseInt(min_avg.avg_adj_time)
+
+		var max_avg = _.maxBy(comb_avg_times, function(o) {
+				return o.avg_adj_time;
+		})
+		var max_avg_val = parseInt(max_avg.avg_adj_time)
+
+		var adj_color = d3.scaleLinear()
+				.domain([min_avg_val,0, max_avg_val])
+				.range(["#71e554","#ffffff","#ffa500"]);				
+
+		var table = d3.select('#serie-a-table')
+			.append('table')
+			//.attr("class", "table table-condensed table-striped");
+
+		var thead = table.append('thead')
+		var	tbody = table.append('tbody');
+
+		// append the header row
+		thead.append('tr')
+		  .selectAll('th')
+		  .data(display_cols).enter()
+		  .append('th')
+			.text(function (column) { return column; });
+
+		// create a row for each object in the data
+		var rows = tbody.selectAll('tr')
+		  .data(comb_avg_times)
+		  .enter()
+		  .append('tr');
+
+		rows.exit().remove();
+
+		a_relegation_danger_1 = comb_avg_times[comb_avg_times.length - 1].lower_case
+		a_relegation_danger_2 = comb_avg_times[comb_avg_times.length - 2].lower_case
+
+		// create a cell in each row for each column
+		cells = rows.selectAll('td')
+			.data(function (row) {
+				return columns.map(function (column) {
+					return {column: column, value: row[column]};
+				});
+			})
+			.enter()
+			.append('td')
+			.style("background-color", function(d){ if((d.column == "lower_case") & d.value == a_relegation_danger_1) return '#fa8072'; return d.value; })
+			.style("background-color", function(d){ if((d.column == "lower_case") & d.value == a_relegation_danger_2) return '#fa8072'; return d.value; })
+			.style("background-color", function(d){ if(d.column == "avg_complete_time" | d.column == "avg_complete_time_no_sat") return color(d.value); return d.value; })
+			.style("background-color", function(d){ if(d.column == "avg_adj_time")  return adj_color(d.value); return d.value; })
+			.text(function (d) { return d.value; });
+
+		cells.exit().remove();
+
+		//return table;
+		fastest_time = _.minBy(_.keys(avg_times), function (o) { return avg_times[o].avg_complete_time; });
+
+		serie_a_leader = avg_times[fastest_time].lower_case
+		//document.getElementById("crossword_queen").innerHTML = "👑 All hail the Crossword Queen (for " + filter_param + "): <b>" + crossword_queen + " </b> 👑"
+}
+
+
+function serie_b(data,players){
+
+		//filter data to serie_a players
+
+		let player_filter = players.map(itemY => { return itemY.lower_case; });
+		serie_b_times = data.filter(itemX => player_filter.includes(itemX.lower_case));
+
+		serie_b_times = _.map(serie_b_times, item => {
+			let newItem = _.clone(item);
+			newItem.complete_time_secs = parseInt(newItem.complete_time_secs, 10);
+
+			newItem.fmt_date = new Date(newItem.date)
+			newItem.day_of_week = newItem.fmt_date.getDay()
+			newItem.saturday = newItem.day_of_week == "6"
+
+			return newItem;
+		});
+
+		serie_b_times = serie_b_times.map(function(a) {
+			a.lower_case = a.name.toLowerCase().trim();
+			return a;
+		});
+
+		avg_daily_time = _(serie_b_times)
+				.groupBy('date')
+				.map((date, id) => ({
+					date: id,
+					avg_time : Math.round(_.meanBy(date, 'complete_time_secs')),
+				}))
+				.value()
+
+		//now merge in average daily times	
+
+		temp_data = serie_b_times	
+
+		temp_data = _.map(temp_data, function(obj) {
+			return _.assign(obj, _.find(avg_daily_time, {
+				date : obj.date
+			}));
+		});
+
+		temp_data = temp_data.map(function(a) {
+			a.diff = a.complete_time_secs - a.avg_time ;
+			return a;
+		});
+
+		// calculate average times by name
+
+		avg_times_b_times = _(serie_b_times)
+		  .groupBy('lower_case')
+		  .map((lower_case, id) => ({
+			lower_case: id,
+			avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+			avg_adj_time : Math.round(_.meanBy(lower_case, 'diff')),
+			count : _.countBy(lower_case)
+
+		  }))
+		  .value()
+
+		// now run average times without saturdays
+
+		function removeDayofWeek(num, obj) {
+			for (var key in obj) {
+				if (obj[key].day_of_week == "6") {
+				  delete obj[key];
+				}
+			}
+			return obj;
+		}
+
+		newArr_case_no_sat = removeDayofWeek("6",serie_b_times)
+
+		avg_times_no_sat = _(newArr_case_no_sat)
+			.groupBy('lower_case')
+			.map((lower_case, id) => ({
+				lower_case: id,
+				avg_complete_time_no_sat: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+				count_no_sat : _.countBy(lower_case)
+			}))
+			.value()
+
+		// now merge two avg times together (lodash is great!)
+
+		comb_avg_times = _.map(avg_times_b_times, function(obj) {
+			return _.assign(obj, _.find(avg_times_no_sat, {
+				lower_case: obj.lower_case
+			}));
+		});
+
+		function fix_counts(obj) {
+			for (var key in obj) {
+				if (obj[key].count  == undefined) {
+					obj[key].count = 0
+				}
+				else {
+					obj[key].count = obj[key].count["[object Object]"];
+				}
+				if (obj[key].count_no_sat  == undefined) {
+					obj[key].count_no_sat = 0
+				}
+				else{
+					obj[key].count_no_sat = obj[key].count_no_sat["[object Object]"];
+				}
+			}
+			return obj;
+		}
+
+		comb_avg_times = fix_counts(comb_avg_times)
+		comb_avg_times = _.orderBy(comb_avg_times, ['avg_complete_time'], ['asc']);
+
+		columns = ['lower_case','avg_complete_time','avg_complete_time_no_sat','avg_adj_time','count','count_no_sat']
+
+		display_cols = ['Name','Average Time','Average Time\n(Excluding Saturday)','Time Adjusted to Daily Average¹','Puzzles Completed','Puzzles Completed\n(Excluding Saturday)']
+
+		// average time scale (no adjustment for average)
+
+		var min = _.minBy(comb_avg_times, function(o) {
+				return o.avg_complete_time;
+		})
+		var min_val = parseInt(min.avg_complete_time)
+
+		var max = _.maxBy(comb_avg_times, function(o) {
+				return o.avg_complete_time;
+		})
+		var max_val = parseInt(max.avg_complete_time)
+
+		var color = d3.scaleLinear()
+				.domain([min_val, max_val])
+				.range(["#B5D3E7","#003366"]);
+
+		// average time scale (adjusted for average)		
+
+		var min_avg = _.minBy(comb_avg_times, function(o) {
+				return o.avg_adj_time;
+		})
+		var min_avg_val = parseInt(min_avg.avg_adj_time)
+
+		var max_avg = _.maxBy(comb_avg_times, function(o) {
+				return o.avg_adj_time;
+		})
+		var max_avg_val = parseInt(max_avg.avg_adj_time)
+
+		var adj_color = d3.scaleLinear()
+				.domain([min_avg_val,0, max_avg_val])
+				.range(["#71e554","#ffffff","#ffa500"]);				
+
+		var table = d3.select('#serie-b-table')
+			.append('table')
+			//.attr("class", "table table-condensed table-striped");
+
+		var thead = table.append('thead')
+		var	tbody = table.append('tbody');
+
+		//// append the header row
+		thead.append('tr')
+		  .selectAll('th')
+		  .data(display_cols).enter()
+		  .append('th')
+			.text(function (column) { return column; });
+
+		// create a row for each object in the data
+		var rows = tbody.selectAll('tr')
+		  .data(comb_avg_times)
+		  .enter()
+		  .append('tr');
+
+		rows.exit().remove();
+
+		b_relegation_danger_1 = comb_avg_times[comb_avg_times.length - 1].lower_case
+		b_relegation_danger_2 = comb_avg_times[comb_avg_times.length - 2].lower_case
+	
+		b_promotion_1 = comb_avg_times[Object.keys(comb_avg_times)[0]].lower_case
+		b_promotion_2 = comb_avg_times[Object.keys(comb_avg_times)[1]].lower_case
+
+		// create a cell in each row for each column
+		cells = rows.selectAll('td')
+			.data(function (row) {
+				return columns.map(function (column) {
+					return {column: column, value: row[column]};
+				});
+			})
+			.enter()
+			.append('td')
+			.style("background-color", function(d){ if((d.column == "lower_case") & d.value == b_relegation_danger_1) return '#fa8072'; return d.value; })
+			.style("background-color", function(d){ if((d.column == "lower_case") & d.value == b_relegation_danger_2) return '#fa8072'; return d.value; })
+			.style("background-color", function(d){ if((d.column == "lower_case") & d.value == b_promotion_1) return '#98FB98'; return d.value; })
+			.style("background-color", function(d){ if((d.column == "lower_case") & d.value == b_promotion_2) return '#98FB98'; return d.value; })
+			.style("background-color", function(d){ if(d.column == "avg_complete_time" | d.column == "avg_complete_time_no_sat" ) return color(d.value); return d.value; })
+			.style("background-color", function(d){ if(d.column == "avg_adj_time" )  return adj_color(d.value); return d.value; })
+			.text(function (d) { return d.value; });
+
+		cells.exit().remove();
+
+		//return table;
+		fastest_time = _.minBy(_.keys(avg_times), function (o) { return avg_times[o].avg_complete_time; });
+
+		serie_b_leader = avg_times[fastest_time].lower_case
+		//document.getElementById("crossword_queen").innerHTML = "👑 All hail the Crossword Queen (for " + filter_param + "): <b>" + crossword_queen + " </b> 👑"
+}
+
+function serie_c(data,players){
+
+		//filter data to serie_a players
+
+		let player_filter = players.map(itemY => { return itemY.lower_case; });
+		serie_c_times = data.filter(itemX => player_filter.includes(itemX.lower_case));
+
+		serie_c_times = _.map(serie_c_times, item => {
+			let newItem = _.clone(item);
+			newItem.complete_time_secs = parseInt(newItem.complete_time_secs, 10);
+
+			newItem.fmt_date = new Date(newItem.date)
+			newItem.day_of_week = newItem.fmt_date.getDay()
+			newItem.saturday = newItem.day_of_week == "6"
+
+			return newItem;
+		});
+
+		serie_c_times = serie_c_times.map(function(a) {
+			a.lower_case = a.name.toLowerCase().trim();
+			return a;
+		});
+
+		avg_daily_time = _(serie_c_times)
+				.groupBy('date')
+				.map((date, id) => ({
+					date: id,
+					avg_time : Math.round(_.meanBy(date, 'complete_time_secs')),
+				}))
+				.value()
+
+		//now merge in average daily times	
+
+		temp_data = serie_c_times	
+
+		temp_data = _.map(temp_data, function(obj) {
+			return _.assign(obj, _.find(avg_daily_time, {
+				date : obj.date
+			}));
+		});
+
+		temp_data = temp_data.map(function(a) {
+			a.diff = a.complete_time_secs - a.avg_time ;
+			return a;
+		});
+
+		// calculate average times by name
+
+		avg_times_b_times = _(serie_c_times)
+		  .groupBy('lower_case')
+		  .map((lower_case, id) => ({
+			lower_case: id,
+			avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+			avg_adj_time : Math.round(_.meanBy(lower_case, 'diff')),
+			count : _.countBy(lower_case)
+
+		  }))
+		  .value()
+
+		// now run average times without saturdays
+
+		function removeDayofWeek(num, obj) {
+			for (var key in obj) {
+				if (obj[key].day_of_week == "6") {
+				  delete obj[key];
+				}
+			}
+			return obj;
+		}
+
+		newArr_case_no_sat = removeDayofWeek("6",serie_c_times)
+
+		avg_times_no_sat = _(newArr_case_no_sat)
+			.groupBy('lower_case')
+			.map((lower_case, id) => ({
+				lower_case: id,
+				avg_complete_time_no_sat: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+				count_no_sat : _.countBy(lower_case)
+			}))
+			.value()
+
+		// now merge two avg times together (lodash is great!)
+
+		comb_avg_times = _.map(avg_times_b_times, function(obj) {
+			return _.assign(obj, _.find(avg_times_no_sat, {
+				lower_case: obj.lower_case
+			}));
+		});
+
+		function fix_counts(obj) {
+			for (var key in obj) {
+				if (obj[key].count  == undefined) {
+					obj[key].count = 0
+				}
+				else {
+					obj[key].count = obj[key].count["[object Object]"];
+				}
+				if (obj[key].count_no_sat  == undefined) {
+					obj[key].count_no_sat = 0
+				}
+				else{
+					obj[key].count_no_sat = obj[key].count_no_sat["[object Object]"];
+				}
+			}
+			return obj;
+		}
+
+		comb_avg_times = fix_counts(comb_avg_times)
+		comb_avg_times = _.orderBy(comb_avg_times, ['avg_complete_time'], ['asc']);
+
+		columns = ['lower_case','avg_complete_time','avg_complete_time_no_sat','avg_adj_time','count','count_no_sat']
+
+		display_cols = ['Name','Average Time','Average Time\n(Excluding Saturday)','Time Adjusted to Daily Average¹','Puzzles Completed','Puzzles Completed\n(Excluding Saturday)']
+
+		// average time scale (no adjustment for average)
+
+		var min = _.minBy(comb_avg_times, function(o) {
+				return o.avg_complete_time;
+		})
+		var min_val = parseInt(min.avg_complete_time)
+
+		var max = _.maxBy(comb_avg_times, function(o) {
+				return o.avg_complete_time;
+		})
+		var max_val = parseInt(max.avg_complete_time)
+
+		var color = d3.scaleLinear()
+				.domain([min_val, max_val])
+				.range(["#B5D3E7","#003366"]);
+
+		// average time scale (adjusted for average)		
+
+		var min_avg = _.minBy(comb_avg_times, function(o) {
+				return o.avg_adj_time;
+		})
+		var min_avg_val = parseInt(min_avg.avg_adj_time)
+
+		var max_avg = _.maxBy(comb_avg_times, function(o) {
+				return o.avg_adj_time;
+		})
+		var max_avg_val = parseInt(max_avg.avg_adj_time)
+
+		var adj_color = d3.scaleLinear()
+				.domain([min_avg_val,0, max_avg_val])
+				.range(["#71e554","#ffffff","#ffa500"]);				
+
+		var table = d3.select('#serie-c-table')
+			.append('table')
+			//.attr("class", "table table-condensed table-striped");
+
+		var thead = table.append('thead')
+		var	tbody = table.append('tbody');
+
+		//// append the header row
+		thead.append('tr')
+		  .selectAll('th')
+		  .data(display_cols).enter()
+		  .append('th')
+			.text(function (column) { return column; });
+
+		// create a row for each object in the data
+		var rows = tbody.selectAll('tr')
+		  .data(comb_avg_times)
+		  .enter()
+		  .append('tr');
+
+		rows.exit().remove();
+
+		c_relegation_danger_1 = comb_avg_times[comb_avg_times.length - 1].lower_case
+		c_relegation_danger_2 = comb_avg_times[comb_avg_times.length - 2].lower_case
+	
+		c_promotion_1 = comb_avg_times[Object.keys(comb_avg_times)[0]].lower_case
+		c_promotion_2 = comb_avg_times[Object.keys(comb_avg_times)[1]].lower_case
+
+
+		// create a cell in each row for each column
+		cells = rows.selectAll('td')
+			.data(function (row) {
+				return columns.map(function (column) {
+					return {column: column, value: row[column]};
+				});
+			})
+			.enter()
+			.append('td')
+			.style("background-color", function(d){ if((d.column == "lower_case") & d.value == c_relegation_danger_1) return '#fa8072'; return d.value; })
+			.style("background-color", function(d){ if((d.column == "lower_case") & d.value == c_relegation_danger_2) return '#fa8072'; return d.value; })
+			.style("background-color", function(d){ if((d.column == "lower_case") & d.value == c_promotion_1) return '#98FB98'; return d.value; })
+			.style("background-color", function(d){ if((d.column == "lower_case") & d.value == c_promotion_2) return '#98FB98'; return d.value; })			
+			.style("background-color", function(d){ if(d.column == "avg_complete_time" | d.column == "avg_complete_time_no_sat" ) return color(d.value); return d.value; })
+			.style("background-color", function(d){ if(d.column == "avg_adj_time" )  return adj_color(d.value); return d.value; })
+			.text(function (d) { return d.value; });
+
+		cells.exit().remove();
+
+		//return table;
+		fastest_time = _.minBy(_.keys(avg_times), function (o) { return avg_times[o].avg_complete_time; });
+
+		serie_c_leader = avg_times[fastest_time].lower_case
+		//document.getElementById("crossword_queen").innerHTML = "👑 All hail the Crossword Queen (for " + filter_param + "): <b>" + crossword_queen + " </b> 👑"
+}
+
 //load data from google sheet doc
 
 var publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1W9jTFsCLpBuAUa3AhvwHM92bWwqpsoWXzJ9k9_UuvjQ/pubhtml';
@@ -726,6 +1336,53 @@ function draw(data, tabletop) {
 	drawChart(main_data);
 	drawTrendChart(main_data);
 	matchUp(main_data);
+
+	//leagues!
+
+	//filter data to beginning of feb, will be used to determine leagues	
+
+	main_data = _.map(main_data, item => {
+		let newItem = _.clone(item);
+
+		newItem.fmt_date = new Date(newItem.date)
+
+		return newItem;
+	});
+
+	var date = new Date()
+	var first_of_month = new Date(date.getFullYear(), date.getMonth(), 1);
+
+	current_season_data = main_data.filter(function (a) { return a.fmt_date >= first_of_month ; });
+
+	player_filter = current_season_data.map(itemY => { return itemY.lower_case; });
+	player_universe = main_data.filter(itemX => player_filter.includes(itemX.lower_case));
+
+	league_times = _(player_universe)
+	  .groupBy('lower_case')
+	  .map((lower_case, id) => ({
+		lower_case: id,
+		avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+		avg_adj_time : Math.round(_.meanBy(lower_case, 'diff')),
+		count : _.countBy(lower_case)
+	  }))
+	  .value()
+
+	function LeagueSorter(a, b) {
+				return a.avg_adj_time - b.avg_adj_time;
+		}
+
+	league_times = league_times.sort(LeagueSorter)  
+
+	//place players based on adjusted time 
+
+	serie_a_players = league_times.slice(0,7)
+	serie_b_players = league_times.slice(7,14)
+	serie_c_players = league_times.slice(14,20)	
+
+	serie_a(current_season_data,serie_a_players);
+	serie_b(current_season_data,serie_b_players);
+	serie_c(current_season_data,serie_c_players);
+
 }
 
 renderSpreadsheetData();
