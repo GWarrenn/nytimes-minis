@@ -720,7 +720,7 @@ function renderSpreadsheetData() {
 
 function draw(data, tabletop) {
 
-	results = tabletop.sheets("mini times")
+	results = tabletop.sheets("master mini times")
 	main_data = results.elements
 
 	drawChart(main_data);
