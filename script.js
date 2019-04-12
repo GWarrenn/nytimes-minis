@@ -2,6 +2,44 @@
 var dt = new Date();
 document.getElementById("datetime").innerHTML = dt.toLocaleString();
 
+function daily_ranking(data){
+
+	var today = new Date()
+	time = String(today.getHours() + ":" + today.getMinutes())
+
+	string_date = String(today.getMonth() + 1) + "/" + today.getDate() + "/" + today.getFullYear()
+
+	todays_minis = data.filter(function (a) { 
+		a.str_date = String(today.getMonth() + 1) + "/" + today.getDate() + "/" + today.getFullYear()
+		return a.date == string_date ; 
+	});
+
+	function compare(a,b) {
+		if (a.complete_time_secs < b.complete_time_secs)
+		  return -1;
+		if (a.complete_time_secs > b.complete_time_secs)
+		  return 1;
+		return 0;
+	  }
+	  
+	  todays_minis = todays_minis.sort(compare);	
+
+	  if (todays_minis.length > 3) {
+		first = todays_minis[0].lower_case[0].toUpperCase() + todays_minis[0].lower_case.slice(1,todays_minis[0].lower_case.length)
+		second = todays_minis[1].lower_case[0].toUpperCase() + todays_minis[1].lower_case.slice(1,todays_minis[0].lower_case.length)
+		third = todays_minis[2].lower_case[0].toUpperCase() + todays_minis[2].lower_case.slice(1,todays_minis[0].lower_case.length)
+
+		document.getElementById("todays-rankings").innerHTML = "🥇: <b>" + first + "</b> (" + todays_minis[0].complete_time_secs + ") 🥈: <b>" + 
+			second + "</b> (" + todays_minis[1].complete_time_secs + ") 🥉: <b>" + third + "</b> (" + todays_minis[2].complete_time_secs + ")"
+				
+		document.getElementById("todays-universe").innerHTML = "As of " +  time + " | " + "Out of " + todays_minis.length + " total competitors" 
+	  }
+	  else {
+			document.getElementById("todays-rankings").innerHTML = " "
+			document.getElementById("todays-universe").innerHTML = "As of " +  time + ", only " + todays_minis.length + " people have completed today's mini. Once more than three people have completed the puzzle, daily winners will be assigned." 
+	  }
+}
+
 function drawChart(data) {
 
 	ranges = ['Last 7 days','Last 30 days','All time']
@@ -726,6 +764,7 @@ function draw(data, tabletop) {
 	drawChart(main_data);
 	drawTrendChart(main_data);
 	matchUp(main_data);
+	daily_ranking(main_data);
 }
 
 renderSpreadsheetData();

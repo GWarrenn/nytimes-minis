@@ -23,6 +23,20 @@
 		text-align:center;
 	}
 
+	#container_alt {
+		width:'500px';
+		border-bottom: 1px solid #333;
+		margin: auto;
+		text-align:center;
+	}	
+
+	#container_alt2 {
+		width:'500px';
+		border-top: 1px solid #333;
+		margin: auto;
+		text-align:center;
+	}	
+
 	p {
 		font-size: 16px;
 	}
@@ -96,3 +110,11 @@
 	.grid path {
 	  stroke-width: 0;
 	}
+
+	.center p {
+		margin: 10px;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+	  }
