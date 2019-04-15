@@ -26,8 +26,8 @@ function daily_ranking(data){
 
 	  if (todays_minis.length > 3) {
 		first = todays_minis[0].lower_case[0].toUpperCase() + todays_minis[0].lower_case.slice(1,todays_minis[0].lower_case.length)
-		second = todays_minis[1].lower_case[0].toUpperCase() + todays_minis[1].lower_case.slice(1,todays_minis[0].lower_case.length)
-		third = todays_minis[2].lower_case[0].toUpperCase() + todays_minis[2].lower_case.slice(1,todays_minis[0].lower_case.length)
+		second = todays_minis[1].lower_case[0].toUpperCase() + todays_minis[1].lower_case.slice(1,todays_minis[1].lower_case.length)
+		third = todays_minis[2].lower_case[0].toUpperCase() + todays_minis[2].lower_case.slice(1,todays_minis[2].lower_case.length)
 
 		document.getElementById("todays-rankings").innerHTML = "🥇: <b>" + first + "</b> (" + todays_minis[0].complete_time_secs + ") 🥈: <b>" + 
 			second + "</b> (" + todays_minis[1].complete_time_secs + ") 🥉: <b>" + third + "</b> (" + todays_minis[2].complete_time_secs + ")"
