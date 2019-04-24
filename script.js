@@ -708,6 +708,146 @@ function drawTrendChart(data) {
 
 }
 
+
+  function swarm(data) {
+
+      data.forEach(function(d) {
+        d.complete_time_secs = +d.complete_time_secs;
+      });
+
+    var margin = {top: 30, right: 20, bottom: 30, left: 50},
+      width = 400 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+    var y2 = d3.scaleLinear().range([height, 0]);
+
+    y2.domain([d3.max(data, function(d) { return d.complete_time_secs ; }),0]);
+
+    var yAxis = d3.axisLeft(y2)
+      .ticks(10, ".0s")
+      .tickSizeOuter(0);
+
+    var colorScale = d3.scaleSequential(d3.interpolateViridis)
+        .domain([d3.min(data, function(d) { return d.complete_time_secs ; }), d3.max(data, function(d) { return d.complete_time_secs ; })]);  
+
+    var svg_swarm = d3.select("#bee-swarm")
+    	.selectAll("circle")
+       //.append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform","translate(" + margin.left + "," + margin.top + ")");
+
+    const manyBody = d3.forceManyBody().strength(2)
+    const center = d3.forceCenter().x((height/3)).y((width/5))
+    
+    // define force
+    let force = d3.forceSimulation()
+      .force('charge', manyBody)
+      .force('center', center)
+      .force('collision', d3.forceCollide(3))
+      .velocityDecay(.48)
+      .force('y', d3.forceY(d => d.complete_time_secs).strength(8))
+      .force('x', d3.forceX(100))
+      .nodes(data)
+      .on('tick', changeNetwork)
+    
+    svg_swarm.selectAll('.swarm-circle')
+      .data(data)
+      .enter()
+      .append('circle')
+      .style('fill', function(d) {
+        return colorScale(d.complete_time_secs);
+      })      
+      .attr('r', 6)
+      .style("opacity", .6)
+      .attr('stroke', 'black')
+      .attr('stroke-width', .1)
+      .append('title')
+      .text(function(d) {return d.complete_time_secs })
+
+    function changeNetwork() {
+      d3.selectAll('circle')
+        .attr('cx', d => d.x)
+        .attr('cy', d => d.y)
+    }
+
+    svg_swarm.append("g")
+      .call(d3.axisLeft(y2));
+
+var colorScale_legend = d3.scaleOrdinal(d3.schemeCategory20);
+
+var legend = svg_swarm.selectAll(".legend")
+    .data(colorScale_legend.domain())
+    .enter().append("g")
+    .attr("class", "legend")
+    .style("font-size","12px")
+    .attr("transform", function(d, i) { return "translate(-60," + i * 14 + ")"; });
+
+  legend.append("rect")
+    .attr("x", width)
+    .attr("width", 12)
+    .attr("height", 12)
+    .style("fill", colorScale_legend);
+
+  legend.append("text")
+    .attr("x", width + 16)
+    .attr("y", 6)
+    .attr("dy", ".35em")
+    .style("text-anchor", "start")
+    .text(function(d) { return d[0].toUpperCase() + d.slice(1,d.length); });
+
+  }
+
+ function histogram(data){
+
+    map = data.map(function(d,i){ return parseFloat(d.complete_time_secs); })
+        var formatCount = d3.format(",.0f");
+
+    var colorScale = d3.scaleSequential(d3.interpolateViridis)
+        .domain([d3.min(data, function(d) { return d.complete_time_secs ; }), d3.max(data, function(d) { return d.complete_time_secs ; })]);        
+
+    var margin = {top: 30, right: 0, bottom: 30, left: 0},
+      width = 400 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+    var svg = d3.select("#histo-gram").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+
+    var x = d3.scaleLinear()
+        .rangeRound([0, width])
+        .domain([0,d3.max(map)]);
+    
+    var bins = d3.histogram()
+        .domain(x.domain())
+        .thresholds(x.ticks(50))
+        (map);
+    
+    var y = d3.scaleLinear()
+        .domain([0, d3.max(bins, function(d) { return d.length; })])
+        .range([height, 0]);
+
+    var bar = svg.selectAll(".bar")
+      .data(bins)
+      .enter().append("g")
+        .attr("class", "bar")
+        .attr("transform", function(d) { return "translate(" + x(d.x0) + "," + y(d.length) + ")"; });
+    
+    bar.append("rect")
+        .attr("x", 1)
+        .attr("width", x(bins[0].x1) - x(bins[0].x0) - 1)
+        .attr("height", function(d) { return height - y(d.length); })
+        .attr("fill", function(d) { return colorScale(d.x0) })
+        .append('title')
+        .text(function(d) {return d.length });
+
+    svg.append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
+ } 
+
 //load data from google sheet doc
 
 var publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1W9jTFsCLpBuAUa3AhvwHM92bWwqpsoWXzJ9k9_UuvjQ/pubhtml';
@@ -722,10 +862,14 @@ function draw(data, tabletop) {
 
 	results = tabletop.sheets("master mini times")
 	main_data = results.elements
+	swarm_data = results.elements
 
 	drawChart(main_data);
 	drawTrendChart(main_data);
 	matchUp(main_data);
+
+	swarm(swarm_data);
+    histogram(main_data);
 }
 
 renderSpreadsheetData();
