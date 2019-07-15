@@ -277,7 +277,7 @@ function drawChart(data) {
 
 		}
 
-		updateTable(data,ranges[0]);
+		updateTable(data,ranges[2]);
 }
 
 
