@@ -113,7 +113,7 @@ function drawChart(data) {
 				.groupBy('date')
 				.map((date, id) => ({
 					date: id,
-					avg_time : Math.round(_.meanBy(date, 'complete_time_secs')),
+					avg_time : Math.round(_.meanBy(date, 'complete_time_secs') * 10) / 10,
 				}))
 				.value()
 
@@ -138,8 +138,8 @@ function drawChart(data) {
 		  .groupBy('lower_case')
 		  .map((lower_case, id) => ({
 			lower_case: id,
-			avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
-			avg_adj_time : Math.round(_.meanBy(lower_case, 'diff')),
+			avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')*10)/10,
+			avg_adj_time : Math.round(_.meanBy(lower_case, 'diff')*10)/10,
 			count : _.countBy(lower_case)
 
 		  }))
@@ -162,7 +162,7 @@ function drawChart(data) {
 			.groupBy('lower_case')
 			.map((lower_case, id) => ({
 				lower_case: id,
-				avg_complete_time_no_sat: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+				avg_complete_time_no_sat: Math.round(_.meanBy(lower_case, 'complete_time_secs')*10)/10,
 				count_no_sat : _.countBy(lower_case)
 			}))
 			.value()
