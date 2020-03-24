@@ -42,7 +42,7 @@ function daily_ranking(data){
 
 function drawChart(data) {
 
-	ranges = ['Last 7 days','Last 30 days','All time']
+	ranges = ['All time','Last 7 days','Last 30 days']
 
 	var dropDown = d3.select('#dateDropdown')
 
@@ -84,7 +84,7 @@ function drawChart(data) {
 		}
 
 		if(filter_param === "All time"){
-			var dateOffset = (24*60*60*1000) * 365;
+			var dateOffset = (24*60*60*1000) * 1000;
 			var today = new Date();
 			var filter = today - dateOffset
 		}
@@ -277,7 +277,7 @@ function drawChart(data) {
 
 		}
 
-		updateTable(data,ranges[2]);
+		updateTable(data,ranges[0]);
 }
 
 
