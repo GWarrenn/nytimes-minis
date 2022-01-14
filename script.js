@@ -42,7 +42,7 @@ function daily_ranking(data){
 
 function drawChart(data) {
 
-	ranges = ['All time','Last 7 days','Last 30 days']
+	ranges = ['All time'] //,'Last 7 days','Last 30 days'
 
 	var dropDown = d3.select('#dateDropdown')
 
@@ -84,7 +84,7 @@ function drawChart(data) {
 		}
 
 		if(filter_param === "All time"){
-			var dateOffset = (24*60*60*1000) * 1000;
+			var dateOffset = (24*60*60*1000) * 100000;
 			var today = new Date();
 			var filter = today - dateOffset
 		}
@@ -138,7 +138,7 @@ function drawChart(data) {
 		  .groupBy('lower_case')
 		  .map((lower_case, id) => ({
 			lower_case: id,
-			avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')*10)/10,
+			avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
 			avg_adj_time : Math.round(_.meanBy(lower_case, 'diff')*10)/10,
 			count : _.countBy(lower_case)
 
@@ -205,6 +205,7 @@ function drawChart(data) {
 		var min = _.minBy(comb_avg_times, function(o) {
 				return o.avg_complete_time;
 		})
+
 		var min_val = parseInt(min.avg_complete_time)
 
 		var max = _.maxBy(comb_avg_times, function(o) {
@@ -748,7 +749,7 @@ function drawTrendChart(data) {
 
 //load data from google sheet doc
 
-var publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1W9jTFsCLpBuAUa3AhvwHM92bWwqpsoWXzJ9k9_UuvjQ/pubhtml';
+var publicSpreadsheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/1W9jTFsCLpBuAUa3AhvwHM92bWwqpsoWXzJ9k9_UuvjQ/values/mini%20times/?key=AIzaSyC7UNBXCLiADMvdWGeokrJvHeAJfBaNZqY';
 
 function renderSpreadsheetData() {
 	Tabletop.init( { key: publicSpreadsheetUrl,
@@ -756,15 +757,46 @@ function renderSpreadsheetData() {
 				 simpleSheet: true } )
 }
 
-function draw(data, tabletop) {
+function draw() {
 
-	results = tabletop.sheets("master mini times")
-	main_data = results.elements
+	// Thank you so much to Marjorie Roswell (mroswell) for this Tabletop alternative, since Google changed it's API to completely
+	// screw over developers using Tabletop.js
+	// https://github.com/jsoma/tabletop/issues/189#issuecomment-650199344
+
+	let SHEET_ID = '1W9jTFsCLpBuAUa3AhvwHM92bWwqpsoWXzJ9k9_UuvjQ'; 
+	let API_KEY = 'AIzaSyC7UNBXCLiADMvdWGeokrJvHeAJfBaNZqY';
+
+	function fetchSheet({ spreadsheetId, sheetName, apiKey, complete }) {
+		let url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}?key=${apiKey}`;
+		return fetch(url).then(response =>
+			response.json().then(result => {
+				let data = Papa.parse(Papa.unparse(result.values), { header: true });
+				complete(data);
+			})
+		);
+	}
+
+	function init() {
+		fetchSheet({
+			spreadsheetId: SHEET_ID,
+			sheetName: 'mini%20times',
+			apiKey: API_KEY,
+			complete: plotCharts
+		});
+	}
+
+	init()
+
+}
+
+function plotCharts(results) {
+    main_data = results.data;
 
 	drawChart(main_data);
 	drawTrendChart(main_data);
 	matchUp(main_data);
 	daily_ranking(main_data);
+    
 }
 
-renderSpreadsheetData();
+draw();
