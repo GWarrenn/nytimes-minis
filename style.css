@@ -7,6 +7,13 @@
 	th {
 		font-weight: bold;
 	}
+
+	.regression {
+		stroke-width: 2px;
+		stroke: rgb(0, 0, 0);
+		stroke-dasharray: 10,5;
+	  }
+	  
 	body{
 		font-family: Courier;
 		font-style: normal;
@@ -93,6 +100,12 @@
 	#chart-header {
 		font-family: Helvetica;
 		font:24px;
+		font-style:bold;
+	}
+
+	#sat-nosat-header {
+		font-family: Helvetica;
+		font:36px;
 		font-style:bold;
 	}
 

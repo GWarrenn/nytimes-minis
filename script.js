@@ -747,6 +747,224 @@ function drawTrendChart(data) {
 
 }
 
+function SatNoSatChart(data){
+
+	newArr = _.map(data, item => {
+		let newItem = _.clone(item);
+		newItem.complete_time_secs = parseInt(newItem.complete_time_secs, 10);
+
+		newItem.fmt_date = new Date(newItem.date)
+		newItem.day_of_week = newItem.fmt_date.getDay()
+		newItem.saturday = newItem.day_of_week == "6"
+
+		return newItem;
+	});
+
+	newArr_case = newArr.map(function(a) {
+		a.lower_case = a.name.toLowerCase().trim();
+		return a;
+	});
+
+	temp_data = _.map(data, function(obj) {
+		return _.assign(obj, _.find(avg_daily_time, {
+			date : obj.date
+		}));
+	});
+
+	temp_data = temp_data.map(function(a) {
+		a.diff = a.complete_time_secs - a.avg_time ;
+		return a;
+	});
+
+	// calculate average times by name
+
+	avg_times = _(newArr_case)
+		.groupBy('lower_case')
+		.map((lower_case, id) => ({
+		lower_case: id,
+		avg_complete_time: Math.round(_.meanBy(lower_case, 'complete_time_secs')),
+		avg_adj_time : Math.round(_.meanBy(lower_case, 'diff')*10)/10,
+		count : _.countBy(lower_case)
+
+		}))
+		.value()
+
+	// now run average times without saturdays
+
+	function removeDayofWeek(num, obj) {
+		for (var key in obj) {
+			if (obj[key].day_of_week == num) {
+				delete obj[key];
+			}
+		}
+		return obj;
+	}
+	newArr_case_no_sat = JSON.parse(JSON.stringify(newArr_case))
+	newArr_case_no_sat = removeDayofWeek("6",newArr_case_no_sat)
+
+	avg_times_no_sat = _(newArr_case_no_sat)
+		.groupBy('lower_case')
+		.map((lower_case, id) => ({
+			lower_case: id,
+			avg_complete_time_no_sat: Math.round(_.meanBy(lower_case, 'complete_time_secs')*10)/10,
+			count_no_sat : _.countBy(lower_case)
+		}))
+		.value()
+
+	// now run average times with only saturdays
+
+	function keepDayofWeek(num, obj) {
+		for (var key in obj) {
+			if (obj[key].day_of_week != num) {
+				delete obj[key];
+			}
+		}
+		return obj;
+	}
+
+	newArr_case_sat = JSON.parse(JSON.stringify(newArr_case))
+	newArr_case_sat = keepDayofWeek("6",newArr_case_sat)
+
+	avg_times_sat = _(newArr_case_sat)
+		.groupBy('lower_case')
+		.map((lower_case, id) => ({
+			lower_case: id,
+			avg_complete_time_sat: Math.round(_.meanBy(lower_case, 'complete_time_secs')*10)/10,
+			count_sat : _.countBy(lower_case)
+		}))
+		.value()	
+
+	// now merge two avg times together (lodash is great!)
+
+	comb_avg_times = _.map(avg_times_sat, function(obj) {
+		return _.assign(obj, _.find(avg_times_no_sat, {
+			lower_case: obj.lower_case
+		}));
+	});
+
+	comb_avg_times =  comb_avg_times.filter(function (el) {
+		return el['lower_case'] != "undefined";
+	  });
+
+	document.getElementById("sat-nosat-header").innerHTML = "How Much Harder are Saturday Puzzles Actually?"
+
+	// D3 plotting
+
+	var margin = {top: 30, right: 20, bottom: 30, left: 50},
+		width = 700 - margin.left - margin.right,
+		height = 500 - margin.top - margin.bottom;
+
+	// format the data
+	comb_avg_times.forEach(function(d) {
+		d.avg_complete_time_no_sat = +d.avg_complete_time_no_sat;
+		d.complete_time_secs = +d.avg_complete_time_sat;
+	});
+
+	// set the ranges
+	var x = d3.scaleLinear()
+			.range([0, width - 75]);
+	var y = d3.scaleLinear()
+			.range([height, 0]);
+
+	y.domain(d3.extent(comb_avg_times, function(d) { return d.avg_complete_time_sat; }));
+	x.domain(d3.extent(comb_avg_times, function(d) { return d.avg_complete_time_no_sat; }));
+
+	dataNest = d3.nest()
+		.key(function(d) {
+			return d.lower_case;
+		})
+		.entries(comb_avg_times);	
+
+	var sat_svg = d3.select("#saturdays").append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+		.append("g")
+		.attr("transform",
+		  "translate(" + margin.left + "," + margin.top + ")");
+
+	var div = d3.select("#saturdays").append("div")
+		.attr("class", "tooltip")
+		.style("opacity", 0);
+
+	sat_svg.selectAll(".dot")
+		.data(comb_avg_times)
+		.enter().append("circle")
+		.attr("class", "dot")
+		.style("opacity", 0.5)
+		.attr("r", 4)
+		.style("fill", 'black')
+		.attr("cx", function(d) { return x(d.avg_complete_time_no_sat); })
+		.attr("cy", function(d) { return y(d.avg_complete_time_sat); })
+		//apply tooltip
+		.on("mouseover", function(d) {
+					div.transition()
+						.duration(200)
+						.style("opacity", .9);
+					div.html(`Name: ${d.lower_case[0].toUpperCase()}${d.lower_case.slice(1, d.lower_case.length)}</br>Avg Time (No Saturdays): ${d.avg_complete_time_no_sat}<br/>Avg Time (Saturdays): ${d.avg_complete_time_sat}`)
+						.style("left", (d3.event.pageX) + "px")
+						.style("top", (d3.event.pageY - 28) + "px");
+		})
+		.on("mouseout", function(d) {
+			div.transition()
+				.duration(500)
+				.style("opacity", 0);
+		});	
+			
+	// Add the X Axis
+	sat_svg.append("g")
+		.attr("class", "axis")
+		.attr("transform", "translate(0," + height + ")")
+		.call(d3.axisBottom(x));
+
+	sat_svg.append("text")
+		.attr("class", "x label")
+		.attr("text-anchor", "end")
+		.attr("x", width/2)
+		.attr("y", height +28)
+		.style("text-anchor", "middle")
+		.style("font-size","12px")
+		.style("font-family","Helvetica")
+		.text("Average Time (Excluding Saturdays)");
+
+	// Add the Y Axis
+	sat_svg.append("g")
+		.attr("class", "axis")
+		.call(d3.axisLeft(y))
+		;
+
+	sat_svg.append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", 0 - margin.left)
+		.attr("x",0 - (height / 2))
+		.attr("dy", "1em")
+		.style("text-anchor", "middle")
+		.style("font-size","12px")
+		.style("font-family","Helvetica")
+		.text("Average Time (Saturdays)");
+
+	// reference lines
+	
+	sat_svg.append("line")
+		.attr("x1", x(_.meanBy(comb_avg_times, 'avg_complete_time_no_sat')))  
+		.attr("y1", 0)
+		.attr("x2", x(_.meanBy(comb_avg_times, 'avg_complete_time_no_sat'))) 
+		.attr("y2", height - margin.top - margin.bottom  + 60)
+		.style("stroke-width", 2)
+		.style("opacity",.4)
+		.style("stroke", "red")
+		.style("fill", "none");
+
+	sat_svg.append("line")
+		.attr("y1", y(_.meanBy(comb_avg_times, 'avg_complete_time_sat')))  
+		.attr("x1", 0)
+		.attr("y2", y(_.meanBy(comb_avg_times, 'avg_complete_time_sat')))  
+		.attr("x2", height - margin.top - margin.bottom  + 170)
+		.style("stroke-width", 2)
+		.style("opacity",.4)
+		.style("stroke", "red")
+		.style("fill", "none");
+}
+
 //load data from google sheet doc
 
 var publicSpreadsheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/1W9jTFsCLpBuAUa3AhvwHM92bWwqpsoWXzJ9k9_UuvjQ/values/mini%20times/?key=AIzaSyC7UNBXCLiADMvdWGeokrJvHeAJfBaNZqY';
@@ -796,6 +1014,7 @@ function plotCharts(results) {
 	drawTrendChart(main_data);
 	matchUp(main_data);
 	daily_ranking(main_data);
+	SatNoSatChart(main_data);
     
 }
 
